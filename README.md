@@ -1,10 +1,11 @@
 CarbonRenewed
 ======
 
-Fork of NavidK0's Carbon, ported to 1.16. Some code from Carbon 2.0
-API for developers to add certain things in Spigot that are normally hard to do.
+Fork of NavidK0's Carbon, ported to 1.16. (Some code from Carbon 1.8, some from 2.0)
 
-I will fix this README.md later
+This is an API for developers to add certain things in Spigot that are normally hard to do.
+
+I will tidy up this README.md later
 
 --
 
