@@ -9,6 +9,7 @@
 /dest
 /libs
 /.externalToolBuilders
+/.settings
 
 /bin
 /build

@@ -1,13 +1,14 @@
-name: Carbon
-main: com.lastabyss.carbon.Carbon
-description: Transforms a 1.7.10 Spigot protocol hacked server into 1.8.
+name: CarbonRenewed
+main: io.github.lapisz.carbonrenewed.CarbonRenewed
+version: 3.0.0
+description: API for developers to add certain features to Spigot.
+api-version: 1.16
+load: STARTUP
+authors: [Lapisz, Navid K., _Shevchik_, Aust1n46]
+website: lapisz.github.io
 softdepend: [ProtocolLib]
 loadbefore: [LWC, NoCheatPlus, NoCheatPlusCompat]
-load: STARTUP
-version: 1.8
-authors: [Navid K., _Shevchik_, Aust1n46]
-
 commands:
   carbon:
-    description: Carbon mod command.
+    description: Carbon main command.
     usage: /<command> [argument]
