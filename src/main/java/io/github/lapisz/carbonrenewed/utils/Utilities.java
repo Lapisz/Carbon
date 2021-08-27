@@ -6,6 +6,7 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,6 +15,7 @@ import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
@@ -78,7 +80,37 @@ public class Utilities {
             Logger.getLogger(Utilities.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
+    
+    /**
+	 * Method added to clean up some reflection code
+	 * Named setField2 not to confuse with the setField in DynamicEnumType
+	 * To do: figure out an alternative way for Java 16 for removeFinalModifier
+	 * @param <T>
+	 * @param clazz               the class of the field you want to access (eg Material.class)
+	 * @param fieldName           getDeclaredField name of the field you want to access
+	 * @param instance            instance for field.set, can be null if static
+	 * @param fieldValue          the new value of what you want to set the field to
+	 * @param removeFinalModifier this needs to be true if the field you want to modify has a final modifier/keyword
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
+	public static <T> void setField2(Class<T> clazz, String fieldName, T instance, Object fieldValue, boolean removeFinalModifier)
+	throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException
+	{
+		Field field = clazz.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		
+		if(removeFinalModifier) {
+			Field modifiersField = Field.class.getDeclaredField("modifiers");
+			modifiersField.setAccessible(true);
+			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+		}
+		
+		field.set(instance, fieldValue);
+	}
+	
     /**
      * Returns the BUKKIT ENTITYTYPE.
      * @param name
@@ -113,55 +145,60 @@ public class Utilities {
     }
 
     /**
-     * Injects a material to Bukkit given a name and id.
+     * Injects a material to Bukkit given a namespace, name, id, and max stack size.
      * See org.bukkit.Material for id's that are currently in use.
-     * @param name
-     * @param id
+     * @param namespace     namespace of the item that the material is to be linked to (eg "minecraft" in minecraft:emerald). all lowercase
+     * @param itemName      name of the material. should be same as the item you want it to correspond to, but all uppercase instead.
+     * @param indexId       index id to register the material in. can be any, as long as it doesnt conflict with the stuff already registered or with the stuff in bukkit material class
+     * @param maxStackSize  self explanatory
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static Material addMaterial(String name, int id) {
-        Material material = DynamicEnumType.addEnum(Material.class, name, new Class[] { Integer.TYPE }, new Object[] { id });
+    public static Material addMaterial(String namespace, String materialName, int indexId, int maxStackSize) {
+    	//Add the item name to the enum (eg Material.DIAMOND)
+        Material material = DynamicEnumType.addEnum(Material.class, materialName, new Class[] { Integer.TYPE }, new Object[] { indexId });
         try {
                 Field field = Material.class.getDeclaredField("BY_NAME");
                 field.setAccessible(true);
                 Object object = field.get(null);
                 Map<String, Material> BY_NAME = (Map<String, Material>) object;
-                BY_NAME.put(name, material);
+                BY_NAME.put(materialName, material);
                 if (plugin.getConfig().getBoolean("debug.verbose", false))
-                	CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s name.", name);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
-        {
+                	CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s name.", materialName);
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
                 e.printStackTrace(System.out);
         }
-        /* "byId" is an old field - see implementation below this code clause for new field "id"
+        
+        //Add the item index id to the enum, just use one that isnt occupied
         try {
-                Field field = Material.class.getDeclaredField("byId");
-                field.setAccessible(true);
-                Object object = field.get(0);
-                Material[] byId = (Material[]) object;
-                byId[id] = material;
-                field.set(object, byId);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
-        {
-                e.printStackTrace(System.out);
-        }
-        */
-        try {
-        		Field field = Material.class.getDeclaredField("id");
-        		field.setAccessible(true);
-        		
-        		Field modifiersField = Field.class.getDeclaredField("modifiers");
-        		modifiersField.setAccessible(true);
-        		modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        		
-        		field.set(material, id);
+        	    setField2(Material.class, "id", material, indexId, true);
         		if (plugin.getConfig().getBoolean("debug.verbose", false))
-        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s ID {1}.", new Object[]{name, Integer.toString(id)});
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
-        {
+        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s ID {1}.", new Object[]{materialName, Integer.toString(indexId)});
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
         		e.printStackTrace(System.out);
         }
+        
+        //Set the item key because it defaults to minecraft:itemname
+        try {
+        		@SuppressWarnings("deprecation")
+				NamespacedKey newKey = new NamespacedKey(namespace, materialName.toLowerCase(Locale.ROOT));
+        		
+        		setField2(Material.class, "key", material, newKey, true);
+        		if (plugin.getConfig().getBoolean("debug.verbose", false))
+        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s key {1}.", new Object[]{materialName, newKey.toString()});
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+        		e.printStackTrace(System.out);
+        }
+        
+        //Set the item max stack size
+        try {
+        		setField2(Material.class, "maxStack", material, maxStackSize, true);
+        		if (plugin.getConfig().getBoolean("debug.verbose", false))
+        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s maxStackSize {1}.", new Object[]{materialName, Integer.toString(maxStackSize)});
+        }  catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+    		e.printStackTrace(System.out);
+        }
+        
         return material;
     }
 

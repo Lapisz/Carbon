@@ -7,8 +7,12 @@ import java.lang.reflect.Modifier;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.inventory.Recipe;
 
+import io.github.lapisz.carbonrenewed.utils.Utilities;
+import net.minecraft.server.v1_16_R3.CreativeModeTab;
+import net.minecraft.server.v1_16_R3.EnumItemRarity;
 import net.minecraft.server.v1_16_R3.Item;
 import net.minecraft.server.v1_16_R3.Items;
 import net.minecraft.server.v1_16_R3.MinecraftKey;
@@ -26,6 +30,9 @@ public class Injector {
   public Injector(CarbonRenewed plugin) {
       Injector.plugin = plugin;
   }
+  
+  //testing material
+  public static final Material WARP_STONE = Utilities.addMaterial("blissadditions", "WARP_STONE", 1001, 1);
   
   /*
   public static void registerBlock(int id, String name, Block block) {
@@ -194,7 +201,8 @@ public class Injector {
   */
   
   public void registerAll() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvocationTargetException, NoSuchMethodException  {
-      
+	  //test item
+	  registerItem("blissadditions", "warp_stone", new Item((new Item.Info()).a(CreativeModeTab.f).a().a(1).a(EnumItemRarity.RARE)) );
   }
   
   

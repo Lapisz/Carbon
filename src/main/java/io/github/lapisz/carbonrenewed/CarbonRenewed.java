@@ -11,6 +11,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 //import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -78,7 +80,6 @@ public class CarbonRenewed extends JavaPlugin {
       Bukkit.shutdown();
       return;
     }
-
     log.info(PREFIX + "Finished injecting all functionalities.");
   }
 
@@ -178,7 +179,17 @@ public class CarbonRenewed extends JavaPlugin {
       sender.sendMessage(ChatColor.DARK_GRAY + "Discord:" + ChatColor.DARK_RED + " TBA");
       //sender.sendMessage(ChatColor.DARK_GRAY + "Spigot Page:" + ChatColor.DARK_RED + " TBA");
       sender.sendMessage(ChatColor.DARK_GRAY + "Use /carbon" + ChatColor.DARK_RED + " reload " + ChatColor.DARK_GRAY + "to reload the configuration from disk.");
-
+      
+      //testing to give the custom material to the player
+      //except it doesnt work, it somehow still isnt linked to the injected item
+      if(sender instanceof Player) {
+    	  Player p = (Player) sender;
+          ItemStack i = new ItemStack(org.bukkit.Material.DIAMOND);
+          i.setType(Injector.WARP_STONE);
+          i.setAmount(1);
+          p.getInventory().addItem(i);
+      }
+      
   }
 
 }
