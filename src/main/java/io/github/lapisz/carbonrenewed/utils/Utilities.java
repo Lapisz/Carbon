@@ -1,6 +1,7 @@
 package io.github.lapisz.carbonrenewed.utils;
 
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
@@ -25,6 +26,7 @@ import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.material.MaterialData;
 
 import io.github.lapisz.carbonrenewed.CarbonRenewed;
 import io.github.lapisz.carbonrenewed.DynamicEnumType;
@@ -153,8 +155,10 @@ public class Utilities {
      * @param maxStackSize  self explanatory
      * @return
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "deprecation" })
     public static Material addMaterial(String namespace, String materialName, int indexId, int maxStackSize) {
+    	//Inject to enum and set all the properties
+    	
     	//Add the item name to the enum (eg Material.DIAMOND)
         Material material = DynamicEnumType.addEnum(Material.class, materialName, new Class[] { Integer.TYPE }, new Object[] { indexId });
         try {
@@ -165,40 +169,58 @@ public class Utilities {
                 BY_NAME.put(materialName, material);
                 if (plugin.getConfig().getBoolean("debug.verbose", false))
                 	CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s name.", materialName);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-                e.printStackTrace(System.out);
-        }
-        
-        //Add the item index id to the enum, just use one that isnt occupied
-        try {
-        	    setField2(Material.class, "id", material, indexId, true);
+                
+                //Add the item index id, just use one that isnt occupied
+                setField2(Material.class, "id", material, indexId, true);
         		if (plugin.getConfig().getBoolean("debug.verbose", false))
         			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s ID {1}.", new Object[]{materialName, Integer.toString(indexId)});
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-        		e.printStackTrace(System.out);
-        }
         
-        //Set the item key because it defaults to minecraft:itemname
-        try {
-        		@SuppressWarnings("deprecation")
+        		//Set the item key because it defaults to minecraft:itemname
 				NamespacedKey newKey = new NamespacedKey(namespace, materialName.toLowerCase(Locale.ROOT));
-        		
+				
         		setField2(Material.class, "key", material, newKey, true);
         		if (plugin.getConfig().getBoolean("debug.verbose", false))
         			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s key {1}.", new Object[]{materialName, newKey.toString()});
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-        		e.printStackTrace(System.out);
-        }
         
-        //Set the item max stack size
-        try {
+        		//Set the item max stack size
         		setField2(Material.class, "maxStack", material, maxStackSize, true);
         		if (plugin.getConfig().getBoolean("debug.verbose", false))
         			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "Injected material {0}''s maxStackSize {1}.", new Object[]{materialName, Integer.toString(maxStackSize)});
-        }  catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-    		e.printStackTrace(System.out);
+        		
+        		//set durability (should always be 0 post-flattening)
+        		setField2(Material.class, "durability", material, (short) 0, true);
+        		if(plugin.getConfig().getBoolean("debug.superverbose", false))
+        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "SUPERVERBOSE: Successfully set Material.durability of {0}", materialName);
+        		
+        		/*set data class (default is MaterialData.class)
+        		 * to do: make the class adjustable for more advanced things later 
+        		 */
+        		//although this is public it is final so still need to use reflection
+        		setField2(Material.class, "data", material, MaterialData.class, true);
+        		if(plugin.getConfig().getBoolean("debug.superverbose", false))
+        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "SUPERVERBOSE: Successfully set Material.data of {0}", materialName);
+        		
+        		//indicate that this is not a legacy material
+        		setField2(Material.class, "legacy", material, false, true);
+        		if(plugin.getConfig().getBoolean("debug.superverbose", false))
+        			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "SUPERVERBOSE: Successfully set Material.legacy of {0}", materialName);
+        		
+        		//Bukkit Material class code for caching constructor - gnu gplv3
+        		if(MaterialData.class.isAssignableFrom(material.data)) {
+        			Constructor<MaterialData> newCtor = (Constructor<MaterialData>) material.data.getConstructor(Material.class, byte.class);
+        			
+        			setField2(Material.class, "ctor", material, newCtor, true);
+        			if(plugin.getConfig().getBoolean("debug.superverbose", false))
+            			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "SUPERVERBOSE: Successfully set Material.ctor of {0} to newCtor", materialName);
+        		} else {
+        			setField2(Material.class, "ctor", material, null, true);
+        			if(plugin.getConfig().getBoolean("debug.superverbose", false))
+            			CarbonRenewed.log.log(Level.INFO, CarbonRenewed.PREFIX + "SUPERVERBOSE: Successfully set Material.ctor of {0} to null", materialName);
+        		}
+        		
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e) {
+                e.printStackTrace(System.out);
         }
-        
         return material;
     }
 

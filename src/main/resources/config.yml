@@ -33,7 +33,10 @@ optimizations:
     world: false
     
 debug:
-  #true for mode detailed logging (recommended)
+  #true for more detailed logging (recommended)
   verbose: true
+  
+  #for developers
+  superverbose: false
         
 donottouch.configVersion: 0.1

@@ -184,10 +184,12 @@ public class CarbonRenewed extends JavaPlugin {
       //except it doesnt work, it somehow still isnt linked to the injected item
       if(sender instanceof Player) {
     	  Player p = (Player) sender;
-          ItemStack i = new ItemStack(org.bukkit.Material.DIAMOND);
-          i.setType(Injector.WARP_STONE);
+          ItemStack i = new ItemStack(org.bukkit.Material.getMaterial("WARP_STONE"));
+          sender.sendMessage(PREFIX + "i.getType() " + i.getType());
+          
           i.setAmount(1);
           p.getInventory().addItem(i);
+          
       }
       
   }
